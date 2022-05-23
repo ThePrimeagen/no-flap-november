@@ -11,7 +11,7 @@ type Bird struct {
     world World
 }
 
-const BIRD_GRAVITY_Y = 20.8;
+const BIRD_GRAVITY_Y = 40.8;
 
 func CreateBird(world World) *Bird {
     return &Bird {
@@ -30,7 +30,12 @@ func (b *Bird) Update(t time.Duration) {
 
     _, h := b.world.GetBounds()
     b.Pos.Y = min(b.Pos.Y, h)
+    b.Acc.Y *= 0.25
+}
 
+func (b *Bird) Jump() {
+    b.Acc.Y -= 18
+    b.Vel.Y = 0
 }
 
 func (b *Bird) UpdateScreen() {
