@@ -35,7 +35,7 @@ func (b *Bird) Update(t time.Duration) {
 
 func (b *Bird) Jump() {
     b.Acc.Y -= 18
-    b.Vel.Y = 0
+    b.Vel.Y = -5
 }
 
 func (b *Bird) UpdateScreen() {
