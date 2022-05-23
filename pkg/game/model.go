@@ -1,12 +1,10 @@
 package game
 
 import (
-	"fmt"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/theprimeagen/the-game/pkg/models"
-	"github.com/theprimeagen/the-game/pkg/physics"
 )
 
 type model struct {
@@ -39,6 +37,7 @@ type frameMsg time.Time
 func animate() tea.Cmd {
 	now := time.Now()
 	timeSince := time.Second / FPS
+
 	return tea.Tick(timeSince, func(t time.Time) tea.Msg {
 		return frameMsg(now)
 	})
@@ -51,7 +50,13 @@ func (m *model) Init() tea.Cmd {
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case frameMsg:
+
+        // TODO: Timing would be great here
+
 		m.updateCount += 1
+        m.Screen.Update(time.Since(time.Time(msg)));
+        m.Bird.Update(time.Since(time.Time(msg)))
+
 		// diff := FPS_SECONDS - time.Since(time.Time(msg)).Seconds()
 		return m, animate() // slightly not on time updates
 
@@ -79,5 +84,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) View() string {
+    m.Bird.Render(m.Screen)
+
     return m.Screen.String()
 }
