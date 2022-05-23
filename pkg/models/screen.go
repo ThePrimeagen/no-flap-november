@@ -66,6 +66,13 @@ func (s *Screen) Update(t time.Duration) {
     copy(s.Screen[0], debugLine)
 }
 
+func (s *Screen) GetBounds() (int, int) {
+    if s.width == 0 {
+        return 0, 0
+    }
+    return s.width, s.height - 2
+}
+
 func (s *Screen) Clear() {
     for _, row := range s.Screen {
         for w := range row {

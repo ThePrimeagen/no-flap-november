@@ -85,6 +85,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *model) View() string {
     m.Bird.Render(m.Screen)
+    str := m.Screen.String()
+    m.Screen.Clear()
 
-    return m.Screen.String()
+    return str
 }
