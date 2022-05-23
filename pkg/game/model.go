@@ -11,24 +11,31 @@ type model struct {
 	lastUpdate  time.Time
 	updateCount int64
 	TimeAlive   float64
-	Width       int
-	Height      int
 
+    updateables []models.Updateable
+    renderables []models.Renderable
+
+    World  *models.NoFlapWorld
 	Screen *models.Screen
 	Bird   *models.Bird
 }
 
 func InitialModel() *model {
+    world := &models.NoFlapWorld{}
+    bird := models.CreateBird(world)
+    screen := models.CreateScreen(world)
+
 	return &model{
 		lastUpdate:  time.Now(),
 		updateCount: 0,
 
 		TimeAlive: 0.0,
-		Width:     0,
-		Height:    0,
+        updateables: []models.Updateable{screen, bird},
+        renderables: []models.Renderable{bird},
 
-		Bird:   models.CreateBird(),
-		Screen: models.CreateScreen(0, 0),
+        Bird: bird,
+        Screen: screen,
+        World: world,
 	}
 }
 
@@ -53,9 +60,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
         // TODO: Timing would be great here
 
-		m.updateCount += 1
-        m.Screen.Update(time.Since(time.Time(msg)));
-        m.Bird.Update(time.Since(time.Time(msg)))
+        delta := time.Since(time.Time(msg))
+        for _, updateable := range m.updateables {
+            updateable.Update(delta)
+        }
 
 		// diff := FPS_SECONDS - time.Since(time.Time(msg)).Seconds()
 		return m, animate() // slightly not on time updates
@@ -72,9 +80,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.WindowSizeMsg:
-		m.Width = msg.Width
-		m.Height = msg.Height
-		m.Screen.UpdateScreen(m.Width, m.Height)
+
+        m.World.UpdateBounds(msg.Width, msg.Height)
+        for _, updateable := range m.updateables {
+            updateable.UpdateScreen()
+        }
 
         // TODO: Flicker?
         m.Screen.Clear()

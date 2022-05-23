@@ -8,12 +8,11 @@ import (
 
 type Screen struct {
     updateCount int
-    width int
-    height int
     debugYHeight int
     Screen [][]byte
 
 	startTime  time.Time
+    world World
 }
 
 func createScreen(width, height int) [][]byte {
@@ -24,21 +23,20 @@ func createScreen(width, height int) [][]byte {
     return screen
 }
 
-func CreateScreen(width, height int) *Screen {
+func CreateScreen(world World) *Screen {
+    width, height := world.GetBounds()
     return &Screen {
         Screen: createScreen(width, height),
         debugYHeight: 1,
-        width: width,
-        height: height,
         updateCount: 0,
         startTime: time.Now(),
+        world: world,
     }
 }
 
-func (s *Screen) UpdateScreen(width, height int) {
+func (s *Screen) UpdateScreen() {
+    width, height := s.world.GetBounds()
     s.Screen = createScreen(width, height)
-    s.width = width
-    s.height = height
 }
 
 func (s *Screen) Render(pos *Point, rendered [][]byte) {
@@ -57,20 +55,14 @@ func (s *Screen) Update(t time.Duration) {
     s.updateCount += 1
 
     fps := float64(s.updateCount) / time.Since(s.startTime).Seconds()
+    width, height := s.world.GetBounds()
 
-    debugLine := []byte(fmt.Sprintf("(%v, %v): I have updated %v times %v", s.width, s.height, s.updateCount, fps))
-    if len(debugLine) > s.width {
-        debugLine = debugLine[:s.width]
+    debugLine := []byte(fmt.Sprintf("(%v, %v): I have updated %v times %v", width, height, s.updateCount, fps))
+    if len(debugLine) > width {
+        debugLine = debugLine[:width]
     }
 
     copy(s.Screen[0], debugLine)
-}
-
-func (s *Screen) GetBounds() (int, int) {
-    if s.width == 0 {
-        return 0, 0
-    }
-    return s.width, s.height - 2
 }
 
 func (s *Screen) Clear() {
