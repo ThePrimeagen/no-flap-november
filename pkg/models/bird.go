@@ -9,6 +9,7 @@ type Bird struct {
     Vel *Vector2D
     Acc *Vector2D
     world World
+    lastScaleFactor float64
 }
 
 const BIRD_GRAVITY_Y = 40.8;
@@ -19,13 +20,14 @@ func CreateBird(world World) *Bird {
         Vel: NewVector2D(0, 0),
         Acc: NewVector2D(0, 0),
         world: world,
+        lastScaleFactor: 0,
     }
 }
 
 // Note: I am no physicist dammit, I am a scientist
 func (b *Bird) Update(t time.Duration) {
     delta := float64(t.Milliseconds()) / 1000.0;
-    b.Vel.Y += BIRD_GRAVITY_Y * delta + b.Acc.Y
+    b.Vel.Y += (BIRD_GRAVITY_Y * delta + b.Acc.Y) * b.world.ScalingYFactor()
     b.Pos.Y += b.Vel.Y * delta
 
     _, h := b.world.GetBounds()
@@ -39,7 +41,16 @@ func (b *Bird) Jump() {
 }
 
 func (b *Bird) UpdateScreen() {
-    // TODO: I need access to the world..
+    currentScale := b.world.ScalingYFactor()
+    if b.lastScaleFactor != 0 {
+        // TODO: Adjust position, velocity, accel?
+        changed := currentScale / b.lastScaleFactor;
+        b.Pos.Y *= changed
+        b.Vel.Y *= changed
+        b.Acc.Y *= 0.5 * changed
+    }
+
+    b.lastScaleFactor = currentScale
 }
 
 func min(one float64, two int) float64 {

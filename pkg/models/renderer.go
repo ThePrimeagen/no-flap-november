@@ -6,6 +6,7 @@ import "time"
 type World interface {
     GetBounds() (int, int)
     UpdateBounds(width, height int)
+    ScalingYFactor() float64
 }
 
 type Renderer interface {
