@@ -5,6 +5,7 @@ import "time"
 // NOTE: I am just hacking because i don't know how to organize game code
 type World interface {
     GetBounds() (int, int)
+    GetFloorY() int
     UpdateBounds(width, height int)
     ScalingYFactor() float64
 }

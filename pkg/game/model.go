@@ -12,30 +12,32 @@ type model struct {
 	updateCount int64
 	TimeAlive   float64
 
-    updateables []models.Updateable
-    renderables []models.Renderable
+	updateables []models.Updateable
+	renderables []models.Renderable
 
-    World  *models.NoFlapWorld
+	World  *models.NoFlapWorld
 	Screen *models.Screen
 	Bird   *models.Bird
+	Pipes  *models.Pipes
 }
 
 func InitialModel() *model {
-    world := &models.NoFlapWorld{}
-    bird := models.CreateBird(world)
-    screen := models.CreateScreen(world)
+	world := &models.NoFlapWorld{}
+	bird := models.CreateBird(world)
+	screen := models.CreateScreen(world)
+	pipes := models.NewPipes(world, screen)
 
 	return &model{
 		lastUpdate:  time.Now(),
 		updateCount: 0,
 
-		TimeAlive: 0.0,
-        updateables: []models.Updateable{screen, bird},
-        renderables: []models.Renderable{bird},
+		TimeAlive:   0.0,
+		updateables: []models.Updateable{screen, pipes, bird},
+		renderables: []models.Renderable{pipes, bird},
 
-        Bird: bird,
-        Screen: screen,
-        World: world,
+		Bird:   bird,
+		Screen: screen,
+		World:  world,
 	}
 }
 
@@ -58,12 +60,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case frameMsg:
 
-        // TODO: Timing would be great here
+		// TODO: Timing would be great here
 
-        delta := time.Since(time.Time(msg))
-        for _, updateable := range m.updateables {
-            updateable.Update(delta)
-        }
+		delta := time.Since(time.Time(msg))
+		for _, updateable := range m.updateables {
+			updateable.Update(delta)
+		}
 
 		// diff := FPS_SECONDS - time.Since(time.Time(msg)).Seconds()
 		return m, animate() // slightly not on time updates
@@ -76,29 +78,31 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// These keys should exit the program.
 		case "k":
-            m.Bird.Jump()
+			m.Bird.Jump()
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		}
 
 	case tea.WindowSizeMsg:
 
-        m.World.UpdateBounds(msg.Width, msg.Height)
-        for _, updateable := range m.updateables {
-            updateable.UpdateScreen()
-        }
+		m.World.UpdateBounds(msg.Width, msg.Height)
+		for _, updateable := range m.updateables {
+			updateable.UpdateScreen()
+		}
 
-        // TODO: Flicker?
-        m.Screen.Clear()
+		// TODO: Flicker?
+		m.Screen.Clear()
 	}
 
 	return m, nil
 }
 
 func (m *model) View() string {
-    m.Bird.Render(m.Screen)
-    str := m.Screen.String()
-    m.Screen.Clear()
+    for _, renderable := range m.renderables {
+        renderable.Render(m.Screen)
+    }
+	str := m.Screen.String()
+	m.Screen.Clear()
 
-    return str
+	return str
 }

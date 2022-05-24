@@ -53,18 +53,11 @@ func (b *Bird) UpdateScreen() {
     b.lastScaleFactor = currentScale
 }
 
-func min(one float64, two int) float64 {
-    two_f := float64(two)
-    if two_f > one {
-        return one
-    }
-    return two_f
-}
-
 func (b *Bird) Render(renderer Renderer) {
     bird := make([][]byte, 1)
     bird[0] = []byte{'@'}
 
     renderer.Render(b.Pos, bird)
 }
+
 
