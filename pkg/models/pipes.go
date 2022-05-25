@@ -109,7 +109,6 @@ func (p *Pipes) Render(renderer Renderer) {
     }
 
     // so this will always work
-    p.screen.AddDebug(fmt.Sprintf("pipes: %+v", p.pipes))
     if p.pipes[0].x < 0 {
         p.pipes = p.pipes[1:]
     }
