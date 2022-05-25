@@ -2,13 +2,15 @@ package models
 
 import (
 	"fmt"
+	"math"
 	"time"
 )
 
-const MICROSECONDS_TO_X = 45_000
-const STARTING_TUBE_SPACING = 25
-const MINIMUM_TUBE_SPACING = 3
-const REDUCTION_SCALE = 5
+const MICROSECONDS_TO_X = 40_000
+const STARTING_TUBE_SPACING = 150
+const SPACING_STEP_DOWN = 50
+const MINIMUM_TUBE_SPACING = 12
+const REDUCTION_SCALE = 3
 
 type Pipes struct {
 	screen *Screen
@@ -67,12 +69,20 @@ func (p *Pipes) canCreatePipe() bool {
 
     pipeCount := 1
     takenSteps := p.elapsedTime / MICROSECONDS_TO_X
+    prevSteps := 2000
 
+    debugMsg := fmt.Sprintf("taken: %v :: ", takenSteps)
     for {
+        scaledReduce := (pipeCount / REDUCTION_SCALE)
+
         currentStepsRequired := maxInt(
-            int64(STARTING_TUBE_SPACING - pipeCount / REDUCTION_SCALE),
+            int64(150 * math.Pow(float64(scaledReduce + 1), -.71)),
             MINIMUM_TUBE_SPACING,
         )
+        if prevSteps > int(currentStepsRequired) {
+            debugMsg = fmt.Sprintf("%v,%v", debugMsg, currentStepsRequired)
+            prevSteps = int(currentStepsRequired)
+        }
 
         if takenSteps < int64(currentStepsRequired) {
             break;
@@ -81,6 +91,8 @@ func (p *Pipes) canCreatePipe() bool {
         pipeCount += 1
         takenSteps -= int64(currentStepsRequired)
     }
+
+    p.screen.AddDebug(debugMsg)
 
     return p.totalPipes < pipeCount
 }
