@@ -46,9 +46,28 @@ func (s *Screen) Render(pos *Point, rendered [][]byte) {
         return
     }
 
+    width, height := s.world.GetBounds()
     for h, row := range rendered {
+        offsetY := s.debugYHeight + int(pos.Y) + h
+        if offsetY < 0 {
+            continue
+        }
+
+        if offsetY >= height {
+            break;
+        }
+
         for w, b := range row {
-            s.Screen[s.debugYHeight + int(pos.Y) + h][int(pos.X) + w] = b
+            offsetX := int(pos.X) + w
+            if offsetX < 0 {
+                continue
+            }
+
+            if offsetX >= width {
+                break;
+            }
+
+            s.Screen[offsetY][offsetX] = b
         }
     }
 }
@@ -72,10 +91,9 @@ func (s *Screen) Update(t time.Duration) {
     fps := float64(s.updateCount) / time.Since(s.startTime).Seconds()
     width, height := s.world.GetBounds()
 
-    debugLine := fmt.Sprintf("(%v, %v): I have updated %v times %v", width, height, s.updateCount, fps)
-    debugLine = s.debugMsg(debugLine)
+    statusLine := fmt.Sprintf("(%v, %v): I have updated %v times %v", width, height, s.updateCount, fps)
 
-    copy(s.Screen[0], []byte(debugLine))
+    copy(s.Screen[0], []byte(statusLine))
     copy(s.Screen[1], []byte(s.debugMsg(s.extraDebug)))
 }
 

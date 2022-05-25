@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-const MICROSECONDS_TO_X = 100_000
+const MICROSECONDS_TO_X = 45_000
 const STARTING_TUBE_SPACING = 25
 const MINIMUM_TUBE_SPACING = 3
 const REDUCTION_SCALE = 5
@@ -109,8 +109,9 @@ func (p *Pipes) Render(renderer Renderer) {
     }
 
     // so this will always work
+    p.screen.AddDebug(fmt.Sprintf("pipes: %+v", p.pipes))
     if p.pipes[0].x < 0 {
-        p.pipes = p.pipes[:1]
+        p.pipes = p.pipes[1:]
     }
 
     height := p.world.GetFloorY()
@@ -122,7 +123,6 @@ func (p *Pipes) Render(renderer Renderer) {
     }
 
     for _, pipe := range p.pipes {
-        p.screen.AddDebug(fmt.Sprintf("Pipes(%+v): point(%v, %v) %+v -- ", p.pipes[0], pipe.x, startingHeight, pipeAscii))
         renderer.Render(&Point{
             X: float64(pipe.x - 1),
             Y: float64(startingHeight),

@@ -9,6 +9,13 @@ func NewPoint2D(x, y float64) *Point {
     return &Point{ x, y }
 }
 
+func AddValues(p1 *Point, x, y float64) Point {
+    return Point {
+        X: p1.X + x,
+        Y: p1.Y + y,
+    }
+}
+
 func Add(p1, p2 *Point) *Point {
     return &Point {
         X: p1.X + p2.X,
