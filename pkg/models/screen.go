@@ -9,11 +9,12 @@ import (
 type Screen struct {
     updateCount int
     debugYHeight int
-    extraDebug string
+    extraDebug[] string
     Screen [][]byte
 
 	startTime  time.Time
     world World
+    renderCount int
 }
 
 func createScreen(width, height int) [][]byte {
@@ -28,11 +29,12 @@ func CreateScreen(world World) *Screen {
     width, height := world.GetBounds()
     return &Screen {
         Screen: createScreen(width, height),
-        debugYHeight: 2,
-        extraDebug: "",
+        debugYHeight: 1,
+        extraDebug: []string{},
         updateCount: 0,
         startTime: time.Now(),
         world: world,
+        renderCount: 0,
     }
 }
 
@@ -42,13 +44,10 @@ func (s *Screen) UpdateScreen() {
 }
 
 func (s *Screen) Render(pos *Point, rendered [][]byte) {
-    if len(s.Screen) <= int(pos.Y) + len(rendered) {
-        return
-    }
-
     width, height := s.world.GetBounds()
+    s.renderCount += 1
     for h, row := range rendered {
-        offsetY := s.debugYHeight + int(pos.Y) + h
+        offsetY := s.debugYHeight + len(s.extraDebug) + int(pos.Y) + h
         if offsetY < 0 {
             continue
         }
@@ -81,20 +80,34 @@ func (s *Screen) debugMsg(msg string) string {
     return msg
 }
 
-func (s *Screen) AddDebug(msg string) {
-    s.extraDebug = msg
+func (s *Screen) AddDebug(msg string, index int) {
+    if len(s.extraDebug) <= index {
+        amount := index - len(s.extraDebug)
+        for i := 0; i <= amount; i += 1 {
+            s.extraDebug = append(s.extraDebug, "")
+        }
+    }
+    s.extraDebug[index] = msg
+}
+
+func (s *Screen) debugRender() {
+    if len(s.Screen) == 0 {
+        return
+    }
+    width, height := s.world.GetBounds()
+
+    statusLine := s.debugMsg(fmt.Sprintf("(%v, %v): %v", width, height,  s.renderCount))
+
+    copy(s.Screen[0], []byte(statusLine))
+    for i, line := range s.extraDebug {
+        copy(s.Screen[1 + i], []byte(s.debugMsg(line)))
+    }
+
+    s.renderCount = 0
 }
 
 func (s *Screen) Update(t time.Duration) {
     s.updateCount += 1
-
-    fps := float64(s.updateCount) / time.Since(s.startTime).Seconds()
-    width, height := s.world.GetBounds()
-
-    statusLine := fmt.Sprintf("(%v, %v): I have updated %v times %v", width, height, s.updateCount, fps)
-
-    copy(s.Screen[0], []byte(statusLine))
-    copy(s.Screen[1], []byte(s.debugMsg(s.extraDebug)))
 }
 
 func (s *Screen) Clear() {
@@ -106,6 +119,7 @@ func (s *Screen) Clear() {
 }
 
 func (s *Screen) String() string {
+    s.debugRender()
     screenString := []string{}
     for _, row := range s.Screen {
         // log.Println(string(row))

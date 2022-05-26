@@ -8,6 +8,7 @@ type World interface {
     GetFloorY() int
     UpdateBounds(width, height int)
     ScalingYFactor() float64
+    ScalingXFactor() float64
 }
 
 type Renderer interface {

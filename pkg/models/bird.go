@@ -12,7 +12,8 @@ type Bird struct {
     lastScaleFactor float64
 }
 
-const BIRD_GRAVITY_Y = 40.8;
+const BIRD_GRAVITY_Y = 69.8;
+const BIRD_JUMP_VELOCITY = -40;
 
 func CreateBird(world World) *Bird {
     return &Bird {
@@ -36,8 +37,8 @@ func (b *Bird) Update(t time.Duration) {
 }
 
 func (b *Bird) Jump() {
-    b.Acc.Y -= 18
-    b.Vel.Y = -5
+    b.Acc.Y = 0
+    b.Vel.Y = BIRD_JUMP_VELOCITY * b.world.ScalingYFactor()
 }
 
 func (b *Bird) UpdateScreen() {

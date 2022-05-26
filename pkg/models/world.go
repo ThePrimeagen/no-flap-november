@@ -1,6 +1,7 @@
 package models
 
 const IDEAL_Y = 35.0
+const IDEAL_X = 120.0
 
 type NoFlapWorld struct {
     width int
@@ -18,6 +19,10 @@ func (n *NoFlapWorld) UpdateBounds(width, height int) {
 
 func (n *NoFlapWorld) ScalingYFactor() float64 {
     return float64(n.height) / IDEAL_Y;
+}
+
+func (n *NoFlapWorld) ScalingXFactor() float64 {
+    return float64(n.width) / IDEAL_X;
 }
 
 func (n *NoFlapWorld) GetFloorY() int {
