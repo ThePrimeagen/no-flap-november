@@ -1,7 +1,7 @@
 package models
 
-const IDEAL_Y = 35.0
-const IDEAL_X = 120.0
+const IDEAL_Y = 26.0
+const IDEAL_X = 98.0
 
 type NoFlapWorld struct {
     width int

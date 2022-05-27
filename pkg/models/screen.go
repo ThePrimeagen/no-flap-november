@@ -96,7 +96,7 @@ func (s *Screen) debugRender() {
     }
     width, height := s.world.GetBounds()
 
-    statusLine := s.debugMsg(fmt.Sprintf("(%v, %v): %v", width, height,  s.renderCount))
+    statusLine := s.debugMsg(fmt.Sprintf("(%v, %v)(%v): %v", width, height, s.world.ScalingXFactor(), s.renderCount))
 
     copy(s.Screen[0], []byte(statusLine))
     for i, line := range s.extraDebug {

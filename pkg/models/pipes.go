@@ -117,7 +117,7 @@ func (p *Pipes) canCreatePipe() bool {
 	}
 
 	pipeCount := 1
-	takenSteps := p.elapsedTime / MICROSECONDS_TO_X
+	takenSteps := int64(float64(p.elapsedTime / MICROSECONDS_TO_X) * p.world.ScalingXFactor());
 	prevSteps := 2000
 
 	for {
