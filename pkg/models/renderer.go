@@ -2,13 +2,18 @@ package models
 
 import "time"
 
+type ITerminal interface {
+    UpdateBounds(width, height int)
+    GetBounds() (int, int)
+    GetFixedBounds() (int, int)
+    ScalingYFactor() float64
+    ScalingXFactor() float64
+}
+
 // NOTE: I am just hacking because i don't know how to organize game code
 type World interface {
     GetBounds() (int, int)
     GetFloorY() int
-    UpdateBounds(width, height int)
-    ScalingYFactor() float64
-    ScalingXFactor() float64
 }
 
 type Renderer interface {
@@ -21,5 +26,4 @@ type Renderable interface {
 
 type Updateable interface {
     Update(t time.Duration)
-    UpdateScreen()
 }

@@ -15,17 +15,17 @@ type model struct {
 	updateables []models.Updateable
 	renderables []models.Renderable
 
-	World  *models.NoFlapWorld
+	term  *models.Terminal
 	Screen *models.Screen
 	Bird   *models.Bird
 	Pipes  *models.Pipes
 }
 
 func InitialModel() *model {
-	world := &models.NoFlapWorld{}
-	bird := models.CreateBird(world)
-	screen := models.CreateScreen(world)
-	pipes := models.NewPipes(world, screen)
+	term := &models.Terminal{}
+	bird := models.CreateBird()
+	screen := models.CreateScreen(term)
+	pipes := models.NewPipes(term, screen)
 
 	return &model{
 		lastUpdate:  time.Now(),
@@ -37,7 +37,7 @@ func InitialModel() *model {
 
 		Bird:   bird,
 		Screen: screen,
-		World:  world,
+		term:  term,
 	}
 }
 
@@ -84,11 +84,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.WindowSizeMsg:
-
-		m.World.UpdateBounds(msg.Width, msg.Height)
-		for _, updateable := range m.updateables {
-			updateable.UpdateScreen()
-		}
+		m.term.UpdateBounds(msg.Width, msg.Height)
+		m.Screen.UpdateScreenSize()
 
 		// TODO: Flicker?
 		m.Screen.Clear()
@@ -98,6 +95,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *model) View() string {
+	width, height := m.term.GetBounds()
+	if width == 0 || height == 0 {
+		return ""
+	}
+
     for _, renderable := range m.renderables {
         renderable.Render(m.Screen)
     }

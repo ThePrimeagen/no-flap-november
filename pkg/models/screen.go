@@ -8,12 +8,13 @@ import (
 
 type Screen struct {
     updateCount int
-    debugYHeight int
-    extraDebug[] string
-    Screen [][]byte
+    screen [][]byte
+    render [][]byte
+	status string
+    debug []string
 
 	startTime  time.Time
-    world World
+    term ITerminal
     renderCount int
 }
 
@@ -25,29 +26,25 @@ func createScreen(width, height int) [][]byte {
     return screen
 }
 
-func CreateScreen(world World) *Screen {
-    width, height := world.GetBounds()
+func CreateScreen(term ITerminal) *Screen {
+    width, height := term.GetFixedBounds()
+    w, h := term.GetBounds()
     return &Screen {
-        Screen: createScreen(width, height),
-        debugYHeight: 1,
-        extraDebug: []string{},
+        screen: createScreen(width, height),
+        render: createScreen(w, h),
+        debug: []string{},
         updateCount: 0,
         startTime: time.Now(),
-        world: world,
+        term: term,
         renderCount: 0,
     }
 }
 
-func (s *Screen) UpdateScreen() {
-    width, height := s.world.GetBounds()
-    s.Screen = createScreen(width, height)
-}
-
 func (s *Screen) Render(pos *Point, rendered [][]byte) {
-    width, height := s.world.GetBounds()
+    width, height := s.term.GetFixedBounds()
     s.renderCount += 1
     for h, row := range rendered {
-        offsetY := s.debugYHeight + len(s.extraDebug) + int(pos.Y) + h
+        offsetY := 1 + len(s.debug) + int(pos.Y) + h
         if offsetY < 0 {
             continue
         }
@@ -66,41 +63,35 @@ func (s *Screen) Render(pos *Point, rendered [][]byte) {
                 break;
             }
 
-            s.Screen[offsetY][offsetX] = b
+            s.screen[offsetY][offsetX] = b
         }
     }
 }
 
-func (s *Screen) debugMsg(msg string) string {
-    width, _ := s.world.GetBounds()
-
-    if len(msg) > width {
-        msg = msg[:width]
+func (s *Screen) debugMsg(msg string, bound int) string {
+    if len(msg) > bound {
+        msg = msg[:bound]
     }
     return msg
 }
 
 func (s *Screen) AddDebug(msg string, index int) {
-    if len(s.extraDebug) <= index {
-        amount := index - len(s.extraDebug)
+    if len(s.debug) <= index {
+        amount := index - len(s.debug)
         for i := 0; i <= amount; i += 1 {
-            s.extraDebug = append(s.extraDebug, "")
+            s.debug = append(s.debug, "")
         }
     }
-    s.extraDebug[index] = msg
+    s.debug[index] = msg
 }
 
 func (s *Screen) debugRender() {
-    if len(s.Screen) == 0 {
-        return
-    }
-    width, height := s.world.GetBounds()
+    width, height := s.term.GetBounds()
+    statusLine := s.debugMsg(fmt.Sprintf("(%v, %v)(%v): %v", width, height, s.term.ScalingXFactor(), s.renderCount), width)
+    copy(s.render[0], []byte(statusLine))
 
-    statusLine := s.debugMsg(fmt.Sprintf("(%v, %v)(%v): %v", width, height, s.world.ScalingXFactor(), s.renderCount))
-
-    copy(s.Screen[0], []byte(statusLine))
-    for i, line := range s.extraDebug {
-        copy(s.Screen[1 + i], []byte(s.debugMsg(line)))
+    for i, line := range s.debug {
+        copy(s.render[1 + i], []byte(s.debugMsg(line, width)))
     }
 
     s.renderCount = 0
@@ -110,22 +101,67 @@ func (s *Screen) Update(t time.Duration) {
     s.updateCount += 1
 }
 
-func (s *Screen) Clear() {
-    for _, row := range s.Screen {
+func (s *Screen) UpdateBounds() {
+	width, height := s.term.GetBounds()
+	s.render = createScreen(width, height)
+}
+
+func clear(screen [][]byte) {
+    for _, row := range screen {
         for w := range row {
             row[w] = ' '
         }
     }
 }
 
+func (s *Screen) UpdateScreenSize() {
+	width, height := s.term.GetBounds()
+	s.render = createScreen(width, height)
+}
+
+func (s *Screen) Clear() {
+	clear(s.screen)
+}
+
 func (s *Screen) String() string {
+	if len(s.render) == 0 {
+		return ""
+	}
+
+	clear(s.render)
     s.debugRender()
-    screenString := []string{}
-    for _, row := range s.Screen {
-        // log.Println(string(row))
-        screenString = append(screenString, string(row))
-    }
+
+    fw, fh := s.term.GetFixedBounds()
+	width, height := s.term.GetBounds()
+
+	offsetX := 0
+	offsetY := 0
+	if fw < width {
+		offsetX = (width - fw) / 2
+	}
+	if fh < height {
+		offsetY = (height - fh) / 2
+	}
+
+	debugOffset := len(s.debug) + 1;
+	maxY := height - debugOffset
+
+	s.AddDebug(fmt.Sprintf("ox %v -- oy %v -- w %v -- h %v ", offsetX, offsetY, width, height), 2)
+	for i, line := range s.screen {
+		if i >= maxY {
+			break
+		}
+
+		offset := s.render[debugOffset + i + offsetY][offsetX:]
+		copy(offset, line)
+	}
+
+	screenString := []string{}
+	for _, line := range s.render {
+		screenString = append(screenString, string(line))
+	}
 
     return strings.Join(screenString, "\n")
 }
 
+// 123456789

@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-const MICROSECONDS_TO_X = 40_000
-const STARTING_TUBE_SPACING = 150
-const SPACING_STEP_DOWN = 50
+const MicrosecondsToX = 40_000
+const StartingTubeSpacing = 150
+const SpacingStepDown = 50
 const MINIMUM_TUBE_SPACING = 12
 const REDUCTION_SCALE = 3
 const PIPE_DIST_FROM_EDGES = 5
@@ -17,7 +17,7 @@ const PIPE_HOLE_SIZE_MILF = 15
 
 type Pipes struct {
 	screen *Screen
-	world  World
+	term  ITerminal
 
 	totalPipes int
 
@@ -32,8 +32,6 @@ type pipe struct {
 	x      int
 	offset int
 
-	screen   *Screen
-	world   World
 	display [][]byte
 }
 
@@ -41,17 +39,19 @@ func randInt(min int, max int) int {
 	return min + rand.Intn(max-min)
 }
 
-func newPipe(startingX int, world World, screen *Screen) *pipe {
-	return &pipe{
+func newPipe(startingX, height int) *pipe {
+
+	p := &pipe{
 		x:       startingX,
-		world:   world,
-		screen:   screen,
 		display: [][]byte{},
 	}
+
+	p.sizeUpPipe(height)
+
+	return p
 }
 
-func (p *pipe) sizeUpPipe() {
-	_, height := p.world.GetBounds()
+func (p *pipe) sizeUpPipe(height int) {
 
     opening := randInt(PIPE_DIST_FROM_EDGES, height - PIPE_DIST_FROM_EDGES)
 	top := opening - PIPE_HOLE_SIZE_MILF/2
@@ -64,35 +64,31 @@ func (p *pipe) sizeUpPipe() {
 	} else if bottom > height-PIPE_DIST_FROM_EDGES {
 		diff := bottom - (height - PIPE_DIST_FROM_EDGES)
 		top -= diff
-		bottom = (height - PIPE_DIST_FROM_EDGES)
+		bottom = height - PIPE_DIST_FROM_EDGES
 	}
 
-    msg := fmt.Sprintf("Building pipe(%v): %v %v %v :: ", height, opening, top, bottom)
 
     display := make([][]byte, height)
     for i := 0; i < height; i += 1 {
         if i <= top || i >= bottom  {
-            msg = fmt.Sprintf("%v%v", msg, "x")
             display[i] = []byte{'x'}
         } else {
-            msg = fmt.Sprintf("%v%v", msg, "_")
             display[i] = []byte{' '}
         }
     }
 
     p.display = display
-    p.screen.AddDebug(msg, 1)
 }
 
-func NewPipes(world World, screen *Screen) *Pipes {
+func NewPipes(term ITerminal, screen *Screen) *Pipes {
 	return &Pipes{
-		screen:          screen,
-		world:           world,
 		lastPipeCreated: 0,
 		elapsedTime:     0,
 		currentStep:     0,
 		pipes:           []*pipe{},
 		totalPipes:      0,
+		term: term,
+		screen: screen,
 	}
 }
 
@@ -117,26 +113,22 @@ func (p *Pipes) canCreatePipe() bool {
 	}
 
 	pipeCount := 1
-	takenSteps := int64(float64(p.elapsedTime / MICROSECONDS_TO_X) * p.world.ScalingXFactor());
-	prevSteps := 2000
+	takenSteps := p.elapsedTime /MicrosecondsToX;
 
 	for {
-		scaledReduce := (pipeCount / REDUCTION_SCALE)
+		scaledReduce := pipeCount / REDUCTION_SCALE
 
 		currentStepsRequired := maxInt(
 			int64(150*math.Pow(float64(scaledReduce+1), -.71)),
 			MINIMUM_TUBE_SPACING,
 		)
-		if prevSteps > int(currentStepsRequired) {
-			prevSteps = int(currentStepsRequired)
-		}
 
-		if takenSteps < int64(currentStepsRequired) {
+		if takenSteps < currentStepsRequired {
 			break
 		}
 
 		pipeCount += 1
-		takenSteps -= int64(currentStepsRequired)
+		takenSteps -= currentStepsRequired
 	}
 
 
@@ -144,17 +136,16 @@ func (p *Pipes) canCreatePipe() bool {
 }
 
 func (p *Pipes) Update(delta time.Duration) {
-	width, _ := p.world.GetBounds()
+	width, height := p.term.GetFixedBounds()
 	p.elapsedTime += delta.Microseconds()
 	if p.canCreatePipe() {
-        pipe := newPipe(width, p.world, p.screen)
-        pipe.sizeUpPipe()
+        pipe := newPipe(width, height)
 		p.pipes = append(p.pipes, pipe)
 		p.lastPipeCreated = p.elapsedTime
 		p.totalPipes += 1
 	}
 
-	steps := p.elapsedTime / MICROSECONDS_TO_X
+	steps := p.elapsedTime / MicrosecondsToX
 	if p.currentStep < steps {
 		for _, pipe := range p.pipes {
 			pipe.x -= 1
@@ -183,12 +174,4 @@ func (p *Pipes) Render(renderer Renderer) {
 			Y: float64(0),
 		}, pipe.display)
 	}
-}
-
-func (p *Pipes) UpdateScreen() {
-	// TODO: Resizing is going to jack the game
-	// So instead lets do some sweeeeeeeeet progressive rendering
-    for _, pipe := range p.pipes {
-        pipe.sizeUpPipe()
-    }
 }
