@@ -1,8 +1,6 @@
 package models
 
 import (
-	"log"
-
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -18,8 +16,7 @@ func CreateGameEvent() *GameEvent {
 
 type GameOverMessage = int
 
-func (g *GameEvent) emitBirdyCollision() {
-    log.Fatal("OHH BABE")
+func (g *GameEvent) EmitBirdyCollision() {
     g.messages = append(g.messages, tea.Cmd(func() tea.Msg {
         return GameOverMessage(1);
     }))

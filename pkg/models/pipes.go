@@ -52,7 +52,7 @@ func newPipe(context *Context, startingX, height int) *Pipe {
 
 func (p *Pipe) CreateRender() (*Point, [][]byte) {
     return &Point{
-        X: float64(p.x - 1),
+        X: float64(p.x),
         Y: float64(0),
     }, p.display
 }
@@ -142,7 +142,7 @@ func (p *Pipes) Update(delta time.Duration) {
 	width, height := p.context.Terminal.GetFixedBounds()
 	p.elapsedTime += delta.Microseconds()
 	if p.canCreatePipe() {
-		pipe := newPipe(p.context, width, height)
+		pipe := newPipe(p.context, width - 1, height)
 		p.Pipes = append(p.Pipes, pipe)
 		p.lastPipeCreated = p.elapsedTime
 		p.totalPipes += 1
@@ -156,7 +156,7 @@ func (p *Pipes) Update(delta time.Duration) {
 		p.currentStep = steps
 	}
 
-	if p.Pipes[0].x < 0 {
+	if len(p.Pipes) > 0 && p.Pipes[0].x < 0 {
 		p.Pipes = p.Pipes[1:]
 	}
 }

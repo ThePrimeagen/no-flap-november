@@ -28,7 +28,9 @@ func (s *Debug) AddDebug(msg string, index int) {
 }
 
 func (s *Debug) CreateRender() (*Point, [][]byte) {
-	width, height := s.context.Terminal.GetBounds()
+	width, _ := s.context.Terminal.GetBounds()
+    height := 1 + len(s.lines)
+
 	screen := make([][]byte, height)
 	for i := 0; i < height; i++ {
 		screen[i] = make([]byte, width)
@@ -48,7 +50,7 @@ func (s *Debug) CreateRender() (*Point, [][]byte) {
 		copy(screen[y+i], []byte(s.debugMsg(line, width)))
 	}
 
-    s.LastRenderedHeight = len(screen)
+    s.LastRenderedHeight = height
 
 	return &Point{0, 0}, screen
 }

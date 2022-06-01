@@ -1,7 +1,6 @@
 package game
 
 import (
-	"log"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -88,7 +87,6 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		events := m.context.Events.GetEvents()
 
 		if len(events) > 0 {
-			log.Fatal("OHH BABE")
 			events = append(events, animate())
 			return m, tea.Batch(events...)
 		}
@@ -142,14 +140,17 @@ func (m *model) View() string {
     }
 
     // TODO: collision
-    m.context.Screen.Render(m.context.Bird)
+    gameEnded := m.context.Screen.Render(m.context.Bird)
+    if gameEnded {
+        m.context.Events.EmitBirdyCollision()
+    }
 
     output.RenderAt(&models.Point{
         X: 0,
         Y: float64(offset),
     }, m.context.Screen);
 
-    str := m.context.Screen.String()
+    str := output.String()
 
 	m.context.Screen.Clear()
 
