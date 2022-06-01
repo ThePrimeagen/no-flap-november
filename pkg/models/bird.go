@@ -36,16 +36,12 @@ func (b *Bird) Jump() {
     b.Vel.Y = BirdJumpVelocity
 }
 
-func (b *Bird) Render(renderer Renderer) {
+func (b *Bird) CreateRender() (*Point, [][]byte) {
 
     bird := make([][]byte, 1)
     bird[0] = []byte{'@'}
 
-    if renderer.CheckForCollisions(b.Pos, bird) {
-        b.eventer.emitBirdyCollision()
-    }
-
-    renderer.Render(b.Pos, bird)
+    return b.Pos, bird
 }
 
 

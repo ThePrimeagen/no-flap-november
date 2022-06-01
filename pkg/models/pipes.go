@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 	"time"
@@ -16,8 +15,7 @@ const PIPE_DIST_FROM_EDGES = 5
 const PIPE_HOLE_SIZE_MILF = 15
 
 type Pipes struct {
-	screen *Screen
-	term  ITerminal
+	context *Context
 
 	totalPipes int
 
@@ -25,23 +23,24 @@ type Pipes struct {
 	currentStep     int64
 	lastPipeCreated int64
 
-	pipes []*pipe
+	Pipes []*Pipe
 }
 
-type pipe struct {
+type Pipe struct {
 	x      int
 	offset int
 
 	display [][]byte
+	context *Context
 }
 
 func randInt(min int, max int) int {
 	return min + rand.Intn(max-min)
 }
 
-func newPipe(startingX, height int) *pipe {
-
-	p := &pipe{
+func newPipe(context *Context, startingX, height int) *Pipe {
+	p := &Pipe{
+		context: context,
 		x:       startingX,
 		display: [][]byte{},
 	}
@@ -51,9 +50,16 @@ func newPipe(startingX, height int) *pipe {
 	return p
 }
 
-func (p *pipe) sizeUpPipe(height int) {
+func (p *Pipe) CreateRender() (*Point, [][]byte) {
+    return &Point{
+        X: float64(p.x - 1),
+        Y: float64(0),
+    }, p.display
+}
 
-    opening := randInt(PIPE_DIST_FROM_EDGES, height - PIPE_DIST_FROM_EDGES)
+func (p *Pipe) sizeUpPipe(height int) {
+
+	opening := randInt(PIPE_DIST_FROM_EDGES, height-PIPE_DIST_FROM_EDGES)
 	top := opening - PIPE_HOLE_SIZE_MILF/2
 	bottom := opening + PIPE_DIST_FROM_EDGES - PIPE_DIST_FROM_EDGES/2
 
@@ -67,28 +73,26 @@ func (p *pipe) sizeUpPipe(height int) {
 		bottom = height - PIPE_DIST_FROM_EDGES
 	}
 
+	display := make([][]byte, height)
+	for i := 0; i < height; i += 1 {
+		if i <= top || i >= bottom {
+			display[i] = []byte{'x'}
+		} else {
+			display[i] = []byte{' '}
+		}
+	}
 
-    display := make([][]byte, height)
-    for i := 0; i < height; i += 1 {
-        if i <= top || i >= bottom  {
-            display[i] = []byte{'x'}
-        } else {
-            display[i] = []byte{' '}
-        }
-    }
-
-    p.display = display
+	p.display = display
 }
 
-func NewPipes(term ITerminal, screen *Screen) *Pipes {
+func NewPipes(context *Context) *Pipes {
 	return &Pipes{
 		lastPipeCreated: 0,
 		elapsedTime:     0,
 		currentStep:     0,
-		pipes:           []*pipe{},
+		Pipes:           []*Pipe{},
 		totalPipes:      0,
-		term: term,
-		screen: screen,
+		context:         context,
 	}
 }
 
@@ -113,7 +117,7 @@ func (p *Pipes) canCreatePipe() bool {
 	}
 
 	pipeCount := 1
-	takenSteps := p.elapsedTime /MicrosecondsToX;
+	takenSteps := p.elapsedTime / MicrosecondsToX
 
 	for {
 		scaledReduce := pipeCount / REDUCTION_SCALE
@@ -131,47 +135,28 @@ func (p *Pipes) canCreatePipe() bool {
 		takenSteps -= currentStepsRequired
 	}
 
-
 	return p.totalPipes < pipeCount
 }
 
 func (p *Pipes) Update(delta time.Duration) {
-	width, height := p.term.GetFixedBounds()
+	width, height := p.context.Terminal.GetFixedBounds()
 	p.elapsedTime += delta.Microseconds()
 	if p.canCreatePipe() {
-        pipe := newPipe(width, height)
-		p.pipes = append(p.pipes, pipe)
+		pipe := newPipe(p.context, width, height)
+		p.Pipes = append(p.Pipes, pipe)
 		p.lastPipeCreated = p.elapsedTime
 		p.totalPipes += 1
 	}
 
 	steps := p.elapsedTime / MicrosecondsToX
 	if p.currentStep < steps {
-		for _, pipe := range p.pipes {
+		for _, pipe := range p.Pipes {
 			pipe.x -= 1
 		}
 		p.currentStep = steps
 	}
-}
 
-func (p *Pipes) Render(renderer Renderer) {
-	if len(p.pipes) == 0 {
-		return
-	}
-
-	// so this will always work
-	if p.pipes[0].x < 0 {
-		p.pipes = p.pipes[1:]
-	}
-
-
-	for i, pipe := range p.pipes {
-        if i == 0 {
-            p.screen.AddDebug(fmt.Sprintf("pipes: %+v", pipe), 0)
-        }
-		renderer.Render(&Point{
-			X: float64(pipe.x - 1),
-			Y: float64(0),
-		}, pipe.display)
+	if p.Pipes[0].x < 0 {
+		p.Pipes = p.Pipes[1:]
 	}
 }

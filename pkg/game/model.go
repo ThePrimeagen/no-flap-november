@@ -21,39 +21,35 @@ type model struct {
 	TimeAlive   float64
 
 	updateables []models.Updateable
-	renderables []models.Renderable
 
-	term      *models.Terminal
-	Screen    *models.Screen
-	Bird      *models.Bird
-	Pipes     *models.Pipes
-	GameEvent *models.GameEvent
-	state     State
+    context   *models.Context
+
+	state State
 }
 
 func InitialModel() *model {
-    context := models.Empty()
+	context := models.Empty()
 	term := &models.Terminal{}
-    w, h := term.GetFixedBounds()
+	w, h := term.GetFixedBounds()
 	gameEvent := models.CreateGameEvent()
 	bird := models.CreateBird(gameEvent)
 	screen := models.NewScreen2(context, w, h)
-	pipes := models.NewPipes(term, screen)
+	pipes := models.NewPipes(context)
+	debug := models.NewDebug(context)
+
+    context.Hydrate(
+        screen, bird, term, pipes, gameEvent, debug,
+    )
 
 	return &model{
 		lastUpdate:  time.Now(),
 		updateCount: 0,
 
 		TimeAlive:   0.0,
-		updateables: []models.Updateable{screen, pipes, bird},
-		renderables: []models.Renderable{pipes, bird},
+		updateables: []models.Updateable{pipes, bird},
 
-		Bird:   bird,
-		Screen: screen,
-		term:   term,
-
-        GameEvent: gameEvent,
-        state: Playing,
+		state:     Playing,
+        context:   context,
 	}
 }
 
@@ -75,24 +71,24 @@ func (m *model) Init() tea.Cmd {
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case models.GameOverMessage:
-        m.state = GameOver
+		m.state = GameOver
 
 	case frameMsg:
 
 		// TODO: Timing would be great here
-        if m.state != Playing {
-            return m, animate()
-        }
+		if m.state != Playing {
+			return m, animate()
+		}
 
 		delta := time.Since(time.Time(msg))
 		for _, updateable := range m.updateables {
 			updateable.Update(delta)
 		}
 
-		events := m.GameEvent.GetEvents()
+		events := m.context.Events.GetEvents()
 
 		if len(events) > 0 {
-            log.Fatal("OHH BABE")
+			log.Fatal("OHH BABE")
 			events = append(events, animate())
 			return m, tea.Batch(events...)
 		}
@@ -108,34 +104,54 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// These keys should exit the program.
 		case "k":
-			m.Bird.Jump()
+			m.context.Bird.Jump()
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		}
 
 	case tea.WindowSizeMsg:
-		m.term.UpdateBounds(msg.Width, msg.Height)
-		m.Screen.UpdateScreenSize()
+		m.context.Terminal.UpdateBounds(msg.Width, msg.Height)
 
 		// TODO: Flicker?
-		m.Screen.Clear()
+		m.context.Screen.Clear()
 	}
 
 	return m, nil
 }
 
 func (m *model) View() string {
-	width, height := m.term.GetBounds()
+	width, height := m.context.Terminal.GetBounds()
+
 	if width == 0 || height == 0 {
 		return ""
 	}
 
-	for _, renderable := range m.renderables {
-		renderable.Render(m.Screen)
-	}
+    // TODO: probably wasteful, but lets start here
+    output := models.NewScreen2(m.context, width, height)
+    output.Clear()
 
-	str := m.Screen.String()
-	m.Screen.Clear()
+    // 1 render debug
+    // 2 render pipes
+    // 3 render bird
+
+    output.Render(m.context.Debug)
+    offset := m.context.Debug.LastRenderedHeight
+
+    for _, pipe := range m.context.Pipes.Pipes {
+        m.context.Screen.Render(pipe)
+    }
+
+    // TODO: collision
+    m.context.Screen.Render(m.context.Bird)
+
+    output.RenderAt(&models.Point{
+        X: 0,
+        Y: float64(offset),
+    }, m.context.Screen);
+
+    str := m.context.Screen.String()
+
+	m.context.Screen.Clear()
 
 	return str
 }

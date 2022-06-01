@@ -17,11 +17,13 @@ type World interface {
 }
 
 type Renderer interface {
-    Render(point *Point, item [][]byte) bool
+    Render(Renderable) bool
+    RenderAt(*Point, Renderable) bool
+    RenderAll([]Renderable)
 }
 
 type Renderable interface {
-    Render(renderer Renderer)
+    CreateRender() (*Point, [][]byte)
 }
 
 type Updateable interface {
