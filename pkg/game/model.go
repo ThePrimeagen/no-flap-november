@@ -1,10 +1,18 @@
 package game
 
 import (
+	"log"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/theprimeagen/the-game/pkg/models"
+)
+
+type State = int
+
+const (
+	Playing State = iota
+	GameOver
 )
 
 type model struct {
@@ -15,16 +23,21 @@ type model struct {
 	updateables []models.Updateable
 	renderables []models.Renderable
 
-	term  *models.Terminal
-	Screen *models.Screen
-	Bird   *models.Bird
-	Pipes  *models.Pipes
+	term      *models.Terminal
+	Screen    *models.Screen
+	Bird      *models.Bird
+	Pipes     *models.Pipes
+	GameEvent *models.GameEvent
+	state     State
 }
 
 func InitialModel() *model {
+    context := models.Empty()
 	term := &models.Terminal{}
-	bird := models.CreateBird()
-	screen := models.CreateScreen(term)
+    w, h := term.GetFixedBounds()
+	gameEvent := models.CreateGameEvent()
+	bird := models.CreateBird(gameEvent)
+	screen := models.NewScreen2(context, w, h)
 	pipes := models.NewPipes(term, screen)
 
 	return &model{
@@ -37,7 +50,10 @@ func InitialModel() *model {
 
 		Bird:   bird,
 		Screen: screen,
-		term:  term,
+		term:   term,
+
+        GameEvent: gameEvent,
+        state: Playing,
 	}
 }
 
@@ -58,13 +74,27 @@ func (m *model) Init() tea.Cmd {
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case models.GameOverMessage:
+        m.state = GameOver
+
 	case frameMsg:
 
 		// TODO: Timing would be great here
+        if m.state != Playing {
+            return m, animate()
+        }
 
 		delta := time.Since(time.Time(msg))
 		for _, updateable := range m.updateables {
 			updateable.Update(delta)
+		}
+
+		events := m.GameEvent.GetEvents()
+
+		if len(events) > 0 {
+            log.Fatal("OHH BABE")
+			events = append(events, animate())
+			return m, tea.Batch(events...)
 		}
 
 		// diff := FPS_SECONDS - time.Since(time.Time(msg)).Seconds()
@@ -100,9 +130,10 @@ func (m *model) View() string {
 		return ""
 	}
 
-    for _, renderable := range m.renderables {
-        renderable.Render(m.Screen)
-    }
+	for _, renderable := range m.renderables {
+		renderable.Render(m.Screen)
+	}
+
 	str := m.Screen.String()
 	m.Screen.Clear()
 

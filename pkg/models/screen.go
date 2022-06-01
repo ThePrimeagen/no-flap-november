@@ -40,6 +40,46 @@ func CreateScreen(term ITerminal) *Screen {
     }
 }
 
+func (s *Screen) CheckForCollisions(pos *Point, rendered [][]byte) bool {
+    // TODO: We should figure out a way to make this code to be the same for
+    // both rendering and colliding.
+
+    width, height := s.term.GetFixedBounds()
+    collision := false
+
+    msg := ""
+    outer_loop: for h, row := range rendered {
+        offsetY := 1 + len(s.debug) + int(pos.Y) + h
+        if offsetY < 0 {
+            continue
+        }
+
+        if offsetY >= height {
+            break;
+        }
+
+        for w, b := range row {
+            offsetX := int(pos.X) + w
+            if offsetX < 0 {
+                continue
+            }
+
+            if offsetX >= width {
+                break;
+            }
+
+            msg = fmt.Sprintf("%v(%v,%v(%v), %v,%v(%v)) ", msg, offsetX, offsetY, string(s.screen[offsetX][offsetY]), w, h, string(b))
+            if s.screen[offsetX][offsetY] != ' ' && b != ' ' {
+                collision = true
+                break outer_loop;
+            }
+        }
+    }
+    s.AddDebug(msg, 2)
+
+    return collision
+}
+
 func (s *Screen) Render(pos *Point, rendered [][]byte) {
     width, height := s.term.GetFixedBounds()
     s.renderCount += 1
@@ -146,7 +186,6 @@ func (s *Screen) String() string {
 	debugOffset := len(s.debug) + 1;
 	maxY := height - debugOffset
 
-	s.AddDebug(fmt.Sprintf("ox %v -- oy %v -- w %v -- h %v ", offsetX, offsetY, width, height), 2)
 	for i, line := range s.screen {
 		if i >= maxY {
 			break

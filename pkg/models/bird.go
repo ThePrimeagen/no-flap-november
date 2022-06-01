@@ -8,16 +8,18 @@ type Bird struct {
     Pos *Point
     Vel *Vector2D
     Acc *Vector2D
+    eventer *GameEvent
 }
 
 const BirdGravityY = 69.8;
 const BirdJumpVelocity = -40;
 
-func CreateBird() *Bird {
+func CreateBird(eventer *GameEvent) *Bird {
     return &Bird {
-        Pos: NewPoint2D(0, 0),
+        Pos: NewPoint2D(5, 0),
         Vel: NewVector2D(0, 0),
         Acc: NewVector2D(0, 0),
+        eventer: eventer,
     }
 }
 
@@ -35,8 +37,13 @@ func (b *Bird) Jump() {
 }
 
 func (b *Bird) Render(renderer Renderer) {
+
     bird := make([][]byte, 1)
     bird[0] = []byte{'@'}
+
+    if renderer.CheckForCollisions(b.Pos, bird) {
+        b.eventer.emitBirdyCollision()
+    }
 
     renderer.Render(b.Pos, bird)
 }

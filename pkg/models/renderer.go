@@ -17,7 +17,7 @@ type World interface {
 }
 
 type Renderer interface {
-    Render(point *Point, item [][]byte)
+    Render(point *Point, item [][]byte) bool
 }
 
 type Renderable interface {
