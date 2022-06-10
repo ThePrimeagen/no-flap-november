@@ -5,43 +5,33 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/theprimeagen/the-game/pkg/models"
+	"github.com/theprimeagen/the-game/pkg/scene"
 )
 
 type model struct {
 	lastUpdate  time.Time
 	updateCount int64
-	TimeAlive   float64
-
-	updateables []models.Updateable
-
-    context   *models.Context
-
-	state State
+	timeAlive   float64
+    stateMachine *scene.GameStateMachine
+    events *models.GameEventer
+    terminal *models.Terminal
 }
 
 func InitialModel() *model {
-	context := models.Empty()
 	term := &models.Terminal{}
-	w, h := term.GetFixedBounds()
 	gameEvent := models.CreateGameEvent()
-	bird := models.CreateBird(gameEvent)
-	screen := models.NewScreen2(context, w, h)
-	pipes := models.NewPipes(context)
-	debug := models.NewDebug(context)
+    sm := scene.NewGameStateMachine()
 
-    context.Hydrate(
-        screen, bird, term, pipes, gameEvent, debug,
-    )
+    sm.InitializeScene(term, gameEvent)
 
 	return &model{
 		lastUpdate:  time.Now(),
 		updateCount: 0,
 
-		TimeAlive:   0.0,
-		updateables: []models.Updateable{pipes, bird},
-
-		state:     Playing,
-        context:   context,
+		timeAlive:   0.0,
+        stateMachine: sm,
+        events: gameEvent,
+        terminal: term,
 	}
 }
 
@@ -62,22 +52,14 @@ func (m *model) Init() tea.Cmd {
 
 func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case models.GameOverMessage:
-		m.state = GameOver
+    case models.GameEvent:
+        m.stateMachine.HandleStateChange(msg)
 
 	case frameMsg:
-
-		// TODO: Timing would be great here
-		if m.state != Playing {
-			return m, animate()
-		}
-
 		delta := time.Since(time.Time(msg))
-		for _, updateable := range m.updateables {
-			updateable.Update(delta)
-		}
+        m.stateMachine.Update(delta)
 
-		events := m.context.Events.GetEvents()
+		events := m.events.GetEvents()
 
 		if len(events) > 0 {
 			events = append(events, animate())
@@ -89,63 +71,23 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// Is it a key press?
 	case tea.KeyMsg:
-
-		// Cool, what was the actual key pressed?
-		switch msg.String() {
-
-		// These keys should exit the program.
-		case "k":
-			m.context.Bird.Jump()
-		case "ctrl+c", "q":
-			return m, tea.Quit
-		}
+        keyPress := msg.String()
+        switch keyPress {
+        case "ctrl+c", "q":
+            return m, tea.Quit
+        default:
+            m.stateMachine.HandleKeyPress(keyPress)
+            return m, nil
+        }
 
 	case tea.WindowSizeMsg:
-		m.context.Terminal.UpdateBounds(msg.Width, msg.Height)
-
-		// TODO: Flicker?
-		m.context.Screen.Clear()
+		m.terminal.UpdateBounds(msg.Width, msg.Height)
+		m.stateMachine.WindowResize(msg.Width, msg.Height)
 	}
 
 	return m, nil
 }
 
 func (m *model) View() string {
-	width, height := m.context.Terminal.GetBounds()
-
-	if width == 0 || height == 0 {
-		return ""
-	}
-
-    // TODO: probably wasteful, but lets start here
-    output := models.NewScreen2(m.context, width, height)
-    output.Clear()
-
-    // 1 render debug
-    // 2 render pipes
-    // 3 render bird
-
-    output.Render(m.context.Debug)
-    offset := m.context.Debug.LastRenderedHeight
-
-    for _, pipe := range m.context.Pipes.Pipes {
-        m.context.Screen.Render(pipe)
-    }
-
-    // TODO: collision
-    gameEnded := m.context.Screen.Render(m.context.Bird)
-    if gameEnded {
-        m.context.Events.EmitBirdyCollision()
-    }
-
-    output.RenderAt(&models.Point{
-        X: 0,
-        Y: float64(offset),
-    }, m.context.Screen);
-
-    str := output.String()
-
-	m.context.Screen.Clear()
-
-	return str
+    return m.stateMachine.Render()
 }

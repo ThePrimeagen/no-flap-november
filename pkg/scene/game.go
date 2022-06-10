@@ -10,7 +10,8 @@ type GameScene struct {
     context   *models.Context
 }
 
-func NewGameScene() {
+func NewGameScene() *GameScene {
+    return &GameScene{}
 }
 
 func (g *GameScene) InitializeScene(term *models.Terminal, eventer *models.GameEventer) {
@@ -75,8 +76,13 @@ func (m *GameScene) Render() string {
 }
 
 func (g* GameScene) HandleKeyPress(key string) {
+    // These keys should exit the program.
+    if key == "k" {
+        g.context.Bird.Jump()
+    }
 }
 
 func (g* GameScene) WindowResize(width, height int) {
+    g.context.Screen.Clear()
 }
 
