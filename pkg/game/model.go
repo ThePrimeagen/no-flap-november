@@ -7,13 +7,6 @@ import (
 	"github.com/theprimeagen/the-game/pkg/models"
 )
 
-type State = int
-
-const (
-	Playing State = iota
-	GameOver
-)
-
 type model struct {
 	lastUpdate  time.Time
 	updateCount int64

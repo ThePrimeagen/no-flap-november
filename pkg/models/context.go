@@ -6,10 +6,10 @@ type Context struct {
 	Bird     *Bird
 	Terminal *Terminal
 	Pipes    *Pipes
-	Events   *GameEvent
+	Events   *GameEventer
 }
 
-func (c *Context) Hydrate(screen *Screen2, bird *Bird, terminal *Terminal, pipes *Pipes, events *GameEvent, debug *Debug) {
+func (c *Context) Hydrate(screen *Screen2, bird *Bird, terminal *Terminal, pipes *Pipes, events *GameEventer, debug *Debug) {
 	c.Debug = debug
 	c.Screen = screen
 	c.Bird = bird

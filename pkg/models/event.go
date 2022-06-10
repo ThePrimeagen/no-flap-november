@@ -4,29 +4,31 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type GameEvent struct {
+type GameEvent = int
+const (
+    GameOverEvent GameEvent = iota
+)
+
+type GameEventer struct {
     messages []tea.Cmd
 }
 
-func CreateGameEvent() *GameEvent {
-    return &GameEvent {
+func CreateGameEvent() *GameEventer {
+    return &GameEventer {
         messages: []tea.Cmd{},
     }
 }
 
-type GameOverMessage = int
-
-func (g *GameEvent) EmitBirdyCollision() {
+func (g *GameEventer) AddEvent(messageType GameEvent) {
     g.messages = append(g.messages, tea.Cmd(func() tea.Msg {
-        return GameOverMessage(1);
+        return messageType
     }))
 }
 
-func (g *GameEvent) GetEvents() []tea.Cmd {
+func (g *GameEventer) GetEvents() []tea.Cmd {
     msg := g.messages
 
     g.messages = []tea.Cmd{}
 
     return msg
 }
-

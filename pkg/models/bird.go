@@ -8,13 +8,13 @@ type Bird struct {
     Pos *Point
     Vel *Vector2D
     Acc *Vector2D
-    eventer *GameEvent
+    eventer *GameEventer
 }
 
 const BirdGravityY = 69.8;
 const BirdJumpVelocity = -40;
 
-func CreateBird(eventer *GameEvent) *Bird {
+func CreateBird(eventer *GameEventer) *Bird {
     return &Bird {
         Pos: NewPoint2D(5, 0),
         Vel: NewVector2D(0, 0),
