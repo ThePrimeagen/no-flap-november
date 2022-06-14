@@ -9,10 +9,13 @@ import (
 
 type GameScene struct {
     context   *models.Context
+    lastRender string
 }
 
 func NewGameScene() *GameScene {
-    return &GameScene{}
+    return &GameScene{
+        lastRender: "",
+    }
 }
 
 func (g *GameScene) InitializeScene(term *models.Terminal, eventer *models.GameEventer) {

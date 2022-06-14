@@ -31,7 +31,10 @@ type Pipe struct {
 	x      int
 	offset int
 
-	display [][]byte
+	opening int
+	top     int
+	bottom  int
+
 	context *Context
 }
 
@@ -39,11 +42,11 @@ func randInt(min int, max int) int {
 	return min + rand.Intn(max-min)
 }
 
-func newPipe(context *Context, startingX, height int) *Pipe {
+func newPipe(context *Context, startingX int) *Pipe {
+    _, height := context.Terminal.GetFixedBounds()
 	p := &Pipe{
 		context: context,
 		x:       startingX,
-		display: [][]byte{},
 	}
 
 	p.sizeUpPipe(height)
@@ -52,14 +55,47 @@ func newPipe(context *Context, startingX, height int) *Pipe {
 }
 
 func (p *Pipe) CreateRender(size int) (*Point, [][]byte) {
-    point := &Point{
-        X: float64(p.x),
-        Y: float64(0),
-    }
+	_, height := p.context.Terminal.GetFixedBounds()
 
-    log.Printf("Pipe#CreateRender(%v): %+v display(%v, %v)", size, point, len(p.display), len(p.display[0]))
+    height *= 0x1 << size
 
-    return point, p.display
+	point := &Point{
+		X: float64(p.x),
+		Y: float64(0),
+	}
+
+	log.Printf("Pipe#CreateRender(%v): %v %v %v", size, p.top, p.bottom, height)
+
+	display := make([][]byte, height)
+	for i := 0; i < height; i += 1 {
+		if i <= p.top * (size + 1) || i >= p.bottom * (size + 1) {
+			display[i] = getPipeDesign(size)
+		} else {
+			display[i] = getEmptySpace(size)
+		}
+	}
+
+	return point, display
+}
+
+func getPipeDesign(scale int) []byte {
+	switch scale {
+	case 1:
+		return []byte{'|', ' ', ' ', '|'}
+	case 2:
+		return []byte{'|', '.', ' ', ' ', ' ', ' ', '.', '|'}
+	}
+
+	return []byte{'x'}
+}
+
+func getEmptySpace(scale int) []byte {
+	out := []byte{}
+	for i := 0; i < int(0x1<<scale); i++ {
+		out = append(out, ' ')
+	}
+
+	return out
 }
 
 func (p *Pipe) sizeUpPipe(height int) {
@@ -78,16 +114,9 @@ func (p *Pipe) sizeUpPipe(height int) {
 		bottom = height - PIPE_DIST_FROM_EDGES
 	}
 
-	display := make([][]byte, height)
-	for i := 0; i < height; i += 1 {
-		if i <= top || i >= bottom {
-			display[i] = []byte{'x'}
-		} else {
-			display[i] = []byte{' '}
-		}
-	}
-
-	p.display = display
+    p.opening = opening
+    p.top = top
+    p.bottom = bottom;
 }
 
 func NewPipes(context *Context) *Pipes {
@@ -144,10 +173,10 @@ func (p *Pipes) canCreatePipe() bool {
 }
 
 func (p *Pipes) Update(delta time.Duration) {
-	width, height := p.context.Terminal.GetFixedBounds()
+	width, _ := p.context.Terminal.GetFixedBounds()
 	p.elapsedTime += delta.Microseconds()
 	if p.canCreatePipe() {
-		pipe := newPipe(p.context, width - 1, height)
+		pipe := newPipe(p.context, width-3)
 		p.Pipes = append(p.Pipes, pipe)
 		p.lastPipeCreated = p.elapsedTime
 		p.totalPipes += 1

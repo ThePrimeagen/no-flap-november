@@ -39,8 +39,19 @@ func (b *Bird) Jump() {
 
 func (b *Bird) CreateRender(size int) (*Point, [][]byte) {
 
-    bird := make([][]byte, 1)
-    bird[0] = []byte{'@'}
+    bird := make([][]byte, 1 << size)
+
+    switch size {
+    case 0:
+        bird[0] = []byte{'@'}
+    case 1:
+        bird[0] = []byte{'/', '\\'}
+        bird[1] = []byte{'\\', '/'}
+    case 2:
+        bird[0] = []byte{' ', ' ', '(', ' ', ' '}
+        bird[1] = []byte{' ', '(', '(', '(', ' '}
+        bird[2] = []byte{'(', '(', ' ', '(', '('}
+    }
 
 
     log.Printf("Bird#CreateRender(%v) %+v", size, b.Pos)

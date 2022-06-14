@@ -75,7 +75,9 @@ func (s *Screen2) render(pos *Point, data [][]byte) bool {
 			if int(pos.X)+col >= s.w {
 				log.Printf("%v we are about to access col outside of bounds pos(%v, %v) rend(%v, %v) surf(%v, %v) -- %v", s.id, pos.X, pos.Y, len(data), len(data[0]), len(s.data), len(s.data[0]), row)
 			}
-			collision = collision || s.data[int(pos.Y)+row][int(pos.X)+col] != ' '
+			collision = collision || (s.data[int(pos.Y)+row][int(pos.X)+col] != ' ' &&
+                data[row][col] != ' ')
+
 			s.data[int(pos.Y)+row][int(pos.X)+col] = c
 		}
 	}
