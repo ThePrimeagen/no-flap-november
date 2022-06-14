@@ -1,6 +1,9 @@
 package models
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Debug struct {
 	lines              []string
@@ -27,32 +30,26 @@ func (s *Debug) AddDebug(msg string, index int) {
 	s.lines[index] = msg
 }
 
-func (s *Debug) CreateRender() (*Point, [][]byte) {
-	width, _ := s.context.Terminal.GetBounds()
+func (s *Debug) LineCount() int {
+    return 1 + len(s.lines)
+}
+
+func (s *Debug) String() string {
+	width := s.context.Screen.w;
     height := 1 + len(s.lines)
 
-	screen := make([][]byte, height)
-	for i := 0; i < height; i++ {
-		screen[i] = make([]byte, width)
+    out := []string{}
+
+	sX := s.context.Terminal.ScalingXFactor(0)
+	sY := s.context.Terminal.ScalingYFactor(0)
+
+	out = append(out, s.debugMsg(fmt.Sprintf("(%v, %v)(%v): %v", width, height, sX, sY), width))
+
+	for _, line := range s.lines {
+        out = append(out, s.debugMsg(line, width))
 	}
 
-	sX := s.context.Terminal.ScalingXFactor()
-	sY := s.context.Terminal.ScalingYFactor()
-
-	statusLine := s.debugMsg(fmt.Sprintf("(%v, %v)(%v): %v", width, height, sX, sY), width)
-
-	y := 0
-	copy(screen[y], []byte(statusLine))
-
-	y++
-
-	for i, line := range s.lines {
-		copy(screen[y+i], []byte(s.debugMsg(line, width)))
-	}
-
-    s.LastRenderedHeight = height
-
-	return &Point{0, 0}, screen
+	return strings.Join(out, "\n")
 }
 
 func (s *Debug) debugMsg(msg string, bound int) string {

@@ -1,11 +1,18 @@
 package models
 
 const fixedX = 98.0
-const fixedY = 35.0
+const fixedY = 33.0
 
 type Terminal struct {
     width int
     height int
+}
+
+func NewTerminal() *Terminal {
+    return &Terminal{
+        width: fixedX,
+        height: fixedY,
+    }
 }
 
 func (t *Terminal) UpdateBounds(width, height int) {
@@ -21,9 +28,10 @@ func (t *Terminal) GetFixedBounds() (int, int) {
 	return fixedX, fixedY
 }
 
-func (t *Terminal) ScalingYFactor() float64 {
-	return float64(t.width) / float64(fixedX)
+func (t *Terminal) ScalingYFactor(reduceW int) float64 {
+	return float64(t.width - reduceW) / float64(fixedX)
 }
-func (t *Terminal) ScalingXFactor() float64 {
-	return float64(t.height) / float64(fixedY)
+func (t *Terminal) ScalingXFactor(reduceH int) float64 {
+	return float64(t.height - reduceH) / float64(fixedY)
 }
+

@@ -23,6 +23,13 @@ func Add(p1, p2 *Point) *Point {
     }
 }
 
+func Mul(p1 *Point, x, y float64) *Point {
+    return &Point {
+        X: x * p1.X,
+        Y: y * p1.Y,
+    };
+}
+
 type Vector2D struct {
     X float64
     Y float64

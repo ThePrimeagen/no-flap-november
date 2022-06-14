@@ -1,6 +1,7 @@
 package scene
 
 import (
+	"strings"
 	"time"
 
 	"github.com/theprimeagen/the-game/pkg/models"
@@ -15,13 +16,18 @@ func NewGameScene() *GameScene {
 }
 
 func (g *GameScene) InitializeScene(term *models.Terminal, eventer *models.GameEventer) {
-	w, h := term.GetFixedBounds()
+    context := &models.Context{
+        Terminal: term, // TODO: i don't like this.
+    }
 
-    context := &models.Context{}
+    debug := models.NewDebug(context)
+    context.Debug = debug // TODO: Look at todo above me.
+
 	bird := models.CreateBird(eventer)
-	screen := models.NewScreen2(context, w, h)
+	screen := models.NewScreen2(context, true, 420)
 	pipes := models.NewPipes(context)
-	debug := models.NewDebug(context)
+
+    screen.Clear()
 
     context.Hydrate(
         screen, bird, term, pipes, eventer, debug,
@@ -37,38 +43,23 @@ func (m *GameScene) Update(delta time.Duration) {
 
 func (m *GameScene) Render() string {
 	width, height := m.context.Terminal.GetBounds()
-
 	if width == 0 || height == 0 {
 		return ""
 	}
 
-    // TODO: probably wasteful, but lets start here
-    output := models.NewScreen2(m.context, width, height)
-    output.Clear()
-
-    // 1 render debug
-    // 2 render pipes
-    // 3 render bird
-
-    output.Render(m.context.Debug)
-    offset := m.context.Debug.LastRenderedHeight
-
+    // 1 render pipes
+    // 2 render bird
+    // 3 render debug to string + screen to string
     for _, pipe := range m.context.Pipes.Pipes {
         m.context.Screen.Render(pipe)
     }
 
-    // TODO: collision
     gameEnded := m.context.Screen.Render(m.context.Bird)
     if gameEnded {
         m.context.Events.AddEvent(models.GameOverEvent)
     }
 
-    output.RenderAt(&models.Point{
-        X: 0,
-        Y: float64(offset),
-    }, m.context.Screen);
-
-    str := output.String()
+    str := strings.Join([]string{m.context.Debug.String(), m.context.Screen.String()}, "\n");
 
 	m.context.Screen.Clear()
 

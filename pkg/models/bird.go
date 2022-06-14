@@ -1,6 +1,7 @@
 package models
 
 import (
+	"log"
 	"time"
 )
 
@@ -36,11 +37,13 @@ func (b *Bird) Jump() {
     b.Vel.Y = BirdJumpVelocity
 }
 
-func (b *Bird) CreateRender() (*Point, [][]byte) {
+func (b *Bird) CreateRender(size int) (*Point, [][]byte) {
 
     bird := make([][]byte, 1)
     bird[0] = []byte{'@'}
 
+
+    log.Printf("Bird#CreateRender(%v) %+v", size, b.Pos)
     return b.Pos, bird
 }
 

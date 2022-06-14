@@ -1,6 +1,7 @@
 package models
 
 import (
+	"log"
 	"math"
 	"math/rand"
 	"time"
@@ -11,7 +12,7 @@ const StartingTubeSpacing = 150
 const SpacingStepDown = 50
 const MINIMUM_TUBE_SPACING = 12
 const REDUCTION_SCALE = 3
-const PIPE_DIST_FROM_EDGES = 5
+const PIPE_DIST_FROM_EDGES = 6
 const PIPE_HOLE_SIZE_MILF = 15
 
 type Pipes struct {
@@ -50,11 +51,15 @@ func newPipe(context *Context, startingX, height int) *Pipe {
 	return p
 }
 
-func (p *Pipe) CreateRender() (*Point, [][]byte) {
-    return &Point{
+func (p *Pipe) CreateRender(size int) (*Point, [][]byte) {
+    point := &Point{
         X: float64(p.x),
         Y: float64(0),
-    }, p.display
+    }
+
+    log.Printf("Pipe#CreateRender(%v): %+v display(%v, %v)", size, point, len(p.display), len(p.display[0]))
+
+    return point, p.display
 }
 
 func (p *Pipe) sizeUpPipe(height int) {

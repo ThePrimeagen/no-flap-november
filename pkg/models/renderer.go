@@ -23,7 +23,7 @@ type Renderer interface {
 }
 
 type Renderable interface {
-    CreateRender() (*Point, [][]byte)
+    CreateRender(scale int) (*Point, [][]byte)
 }
 
 type Updateable interface {

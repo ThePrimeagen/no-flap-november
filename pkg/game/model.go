@@ -18,7 +18,7 @@ type model struct {
 }
 
 func InitialModel() *model {
-	term := &models.Terminal{}
+	term := models.NewTerminal()
 	gameEvent := models.CreateGameEvent()
     sm := scene.NewGameStateMachine()
 
@@ -65,6 +65,17 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			events = append(events, animate())
 			return m, tea.Batch(events...)
 		}
+
+        // 3 - rendering items
+        // @   x
+        //
+        // .\
+        // @/:
+
+        // 1 . progressive rendering
+        // 1.1  we need floor and ceiling
+        // 2 . death screen / menu
+        // 3 . score
 
 		// diff := FPS_SECONDS - time.Since(time.Time(msg)).Seconds()
 		return m, animate() // slightly not on time updates
